@@ -1,10 +1,19 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: MSVC MSYS2
+description: Sets up an MSYS2 environment that uses the MSVC compiler.
+author: Cyderize
 inputs:
-  myInput:              # change this
-    description: 'input description here'
-    default: 'default value if applicable'
+  clean-path:
+    description: Whether or not the PATH should be cleaned to only allow MSYS2 and MSVC tools
+    default: true
+  shell-name:
+    description: This name can be used with the shell of run steps to use MSYS2
+    default: msys2
+  update:
+    description: Whether or not MSYS2 should be updated
+    default: true
+  version:
+    description: Version of MSYS2 to install (can also be `latest`, or `included` for built-in MSYS2)
+    default: latest
 runs:
-  using: 'node12'
-  main: 'dist/index.js'
+  using: node12
+  main: dist/index.js

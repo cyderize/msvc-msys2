@@ -1,5 +1,5 @@
-name: "build-test"
-on: # rebuild any PRs and main branch changes
+name: 'build-test'
+on:
   pull_request:
   push:
     branches:
@@ -7,17 +7,36 @@ on: # rebuild any PRs and main branch changes
       - 'releases/*'
 
 jobs:
-  build: # make sure build/ci work properly
-    runs-on: ubuntu-latest
+  build:
+    runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v1
-    - run: |
-        npm install
-        npm run all
-  test: # make sure the action works on a clean machine without building
-    runs-on: ubuntu-latest
+      - uses: actions/checkout@v2
+      - name: Check build
+        run: |
+          npm install
+          npm run all
+
+  test:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        version: [latest, included]
+        update: [true, false]
+        clean-path: [true, false]
     steps:
-    - uses: actions/checkout@v1
-    - uses: ./
-      with: 
-        milliseconds: 1000
+      - uses: actions/checkout@v2
+      - name: Setup MSVC-MSYS2
+        uses: ./
+        with:
+          clean-path: ${{ matrix.clean-path }}
+          shell-name: msys2
+          update: ${{ matrix.update }}
+          version: ${{ matrix.version }}
+      - name: Run script using MSYS2
+        run: |
+          echo "Hello from MSYS2!"
+          echo "----------"
+          pacman -Q
+          echo "----------"
+          printenv
+        shell: msys2 {0}

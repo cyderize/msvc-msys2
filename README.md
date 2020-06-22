@@ -1,101 +1,22 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
+MSVC-MSYS2 Action
+=================
 
-# Create a JavaScript Action using TypeScript
+![build-test](https://github.com/cyderize/msvc-msys2/workflows/build-test/badge.svg)
 
-Use this template to bootstrap the creation of a JavaScript action.:rocket:
+This GitHub action sets up an MSYS2 environment with the MSVC tools and variables made available.
 
-This template includes compilication support, tests, a validation workflow, publishing, and versioning guidance.  
+Its purpose is to have access to common Unix programs, but without GCC, to ensure that MSVC is always used.
 
-If you are new, there's also a simpler introduction.  See the [Hello World JavaScript Action](https://github.com/actions/hello-world-javascript-action)
-
-## Create an action from this template
-
-Click the `Use this Template` and provide the new repo details for your action
-
-## Code in Master
-
-Install the dependencies  
-```bash
-$ npm install
-```
-
-Build the typescript and package it for distribution
-```bash
-$ npm run build && npm run pack
-```
-
-Run the tests :heavy_check_mark:  
-```bash
-$ npm test
-
- PASS  ./index.test.js
-  ✓ throws invalid number (3ms)
-  ✓ wait 500 ms (504ms)
-  ✓ test runs (95ms)
-
-...
-```
-
-## Change action.yml
-
-The action.yml contains defines the inputs and output for your action.
-
-Update the action.yml with your name, description, inputs and outputs for your action.
-
-See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-github-actions)
-
-## Change the Code
-
-Most toolkit and CI/CD operations involve async operations so the action is run in an async function.
-
-```javascript
-import * as core from '@actions/core';
-...
-
-async function run() {
-  try { 
-      ...
-  } 
-  catch (error) {
-    core.setFailed(error.message);
-  }
-}
-
-run()
-```
-
-See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
-
-## Publish to a distribution branch
-
-Actions are run from GitHub repos so we will checkin the packed dist folder. 
-
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
-```bash
-$ npm run pack
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
-```
-
-Your action is now published! :rocket: 
-
-See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-
-## Validate
-
-You can now validate the action by referencing `./` in a workflow in your repo (see [test.yml](.github/workflows/test.yml)])
+## Usage
 
 ```yaml
-uses: ./
-with:
-  milliseconds: 1000
+      - uses: cyderize/msvc-msys2@v1
+        with:
+          clean-path: true # Resets path to bare minimum so that other installed tools don't interfere
+          shell-name: msys2 # Exposes the MSYS2 shell using this name for run steps
+          update: true # Whether or not to update MSYS2 packages
+          version: latest # Version of MSYS2 to install (can also be `included` for built-in MSYS2)
+      - run: |
+          echo "This is MSYS2"
+        shell: msys2 {0}
 ```
-
-See the [actions tab](https://github.com/actions/javascript-action/actions) for runs of this action! :rocket:
-
-## Usage:
-
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
