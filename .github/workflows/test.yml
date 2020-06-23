@@ -23,6 +23,7 @@ jobs:
         version: [latest, included]
         update: [true, false]
         clean-path: [true, false]
+        use-msvc: [true, false]
     steps:
       - uses: actions/checkout@v2
       - name: Setup MSVC-MSYS2
@@ -40,3 +41,14 @@ jobs:
           echo "----------"
           printenv
         shell: msys2 {0}
+      - name: Run script using MSYS2 and environment overrides
+        run: |
+          echo "Hello from MSYS2!"
+          echo "----------"
+          pacman -Q
+          echo "----------"
+          printenv
+        shell: msys2 {0}
+        env:
+          CLEAN_PATH: ${{ !matrix.clean-path }}
+          USE_MSVC: ${{ !matrix.use_msvc }}

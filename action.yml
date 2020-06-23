@@ -5,6 +5,9 @@ inputs:
   clean-path:
     description: Whether or not the PATH should be cleaned to only allow MSYS2 and MSVC tools
     default: true
+  use-msvc:
+    description: Whether or not to run VsDevCmd.bat to setup MSVC environment
+    default: true
   shell-name:
     description: This name can be used with the shell of run steps to use MSYS2
     default: msys2

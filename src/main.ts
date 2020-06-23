@@ -21,8 +21,7 @@ async function run(): Promise<void> {
     await io.mkdirP(root)
 
     const version = core.getInput('version') || 'latest'
-    const installDir =
-      version === 'included' ? 'C:\\msys64' : path.join(root, 'msys64')
+    const installDir = version === 'included' ? 'C:\\msys64' : path.join(root, 'msys64')
     const launcher = path.join(installDir, 'msys2_shell.cmd')
 
     if (version !== 'included') {
@@ -48,59 +47,65 @@ async function run(): Promise<void> {
 
       await core.group(
         'Setting up MSYS2',
-        async () =>
-          await exec.exec(launcher, ['-defterm', '-no-start', '-c', 'exit'])
+        async () => await exec.exec(launcher, ['-defterm', '-no-start', '-c', 'exit'])
       )
     }
 
-    await core.group('Updating MSYS2', async () => {
-      const command = 'pacman -Syuu --noconfirm --disable-download-timeout'
-      const indicator = 'there is nothing to do'
-      let output = ''
-      const outStream = new stream.Writable({
-        write(chunk, encoding, next) {
-          output += chunk.toString()
-          process.stdout.write(chunk)
-          next()
+    if (core.getInput('update').toLowerCase() === 'true') {
+      await core.group('Updating MSYS2', async () => {
+        const command = 'pacman -Syuu --noconfirm --disable-download-timeout'
+        const indicator = 'there is nothing to do'
+        let output = ''
+        const outStream = new stream.Writable({
+          write(chunk, encoding, next) {
+            output += chunk.toString()
+            process.stdout.write(chunk)
+            next()
+          }
+        })
+        let occurrences = 0
+        const maxTries = 5
+        for (let tries = 0; tries < maxTries && occurrences < 2; tries++) {
+          output = ''
+          core.debug(`MSYS2 update iteration ${tries + 1}...`)
+          await exec.exec(launcher, ['-defterm', '-no-start', '-c', command], {
+            outStream,
+            ignoreReturnCode: true
+          })
+          if (output.includes(indicator)) {
+            occurrences++
+          }
         }
       })
-      let occurrences = 0
-      const maxTries = core.getInput('update').toLowerCase() === 'true' ? 5 : 0
-      for (let tries = 0; tries < maxTries && occurrences < 2; tries++) {
-        output = ''
-        core.debug(`MSYS2 update iteration ${tries + 1}...`)
-        await exec.exec(launcher, ['-defterm', '-no-start', '-c', command], {
-          outStream,
-          ignoreReturnCode: true
-        })
-        if (output.includes(indicator)) {
-          occurrences++
-        }
-      }
-    })
+    }
 
     const shellName = core.getInput('shell-name') || 'msys2'
     await core.group(`Making shell '${shellName} available'`, async () => {
-      const shouldCleanPath =
-        core.getInput('clean-path').toLowerCase() === 'true'
+      const shouldCleanPath = core.getInput('clean-path').toLowerCase() === 'true'
+      const shouldUseMSVC = core.getInput('use-msvc').toLowerCase() === 'true'
       const cleanedPath = process.env['PATH']
         ?.split(';')
         .filter(p => p.toLowerCase().startsWith('c:\\windows'))
         .join(';')
       const vsDevCmd =
         'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\Tools\\VsDevCmd.bat'
-      await fs.writeFile(
-        path.join(root, `${shellName}.bat`),
-        [
-          '@echo off',
-          'setlocal',
-          'IF NOT DEFINED MSYS2_PATH_TYPE set MSYS2_PATH_TYPE=inherit',
-          shouldCleanPath ? `set PATH=${JSON.stringify(cleanedPath)}` : '',
-          `call ${JSON.stringify(vsDevCmd)} -no_logo -arch=amd64`,
-          `call ${JSON.stringify(launcher)} -defterm -no-start %*`,
-          'endlocal'
-        ].join('\r\n')
-      )
+      const shell = [
+        '@echo off',
+        'setlocal',
+        'IF NOT DEFINED MSYS2_PATH_TYPE set MSYS2_PATH_TYPE=inherit',
+        `IF NOT DEFINED CLEAN_PATH set CLEAN_PATH=${shouldCleanPath}`,
+        `IF NOT DEFINED USE_MSVC set USE_MSVC=${shouldUseMSVC}`,
+        `IF "%CLEAN_PATH%" == "1" set PATH=${JSON.stringify(cleanedPath)}`,
+        `IF "%CLEAN_PATH%" == "true" set PATH=${JSON.stringify(cleanedPath)}`,
+        `IF "%USE_MSVC%" == "1" call ${JSON.stringify(vsDevCmd)} -no_logo -arch=amd64`,
+        `IF "%USE_MSVC%" == "true" call ${JSON.stringify(vsDevCmd)} -no_logo -arch=amd64`,
+        `call ${JSON.stringify(launcher)} -defterm -no-start %*`,
+        'endlocal'
+      ]
+      const shellBat = path.join(root, `${shellName}.bat`)
+      console.log(`Creating shell launcher script ${shellBat}`)
+      console.log(shell.join('\n'))
+      await fs.writeFile(shellBat, shell.join('\r\n'))
       core.addPath(root)
     })
   } catch (error) {

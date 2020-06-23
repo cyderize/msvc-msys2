@@ -1435,46 +1435,57 @@ function run() {
                 }));
                 yield core.group('Setting up MSYS2', () => __awaiter(this, void 0, void 0, function* () { return yield exec.exec(launcher, ['-defterm', '-no-start', '-c', 'exit']); }));
             }
-            yield core.group('Updating MSYS2', () => __awaiter(this, void 0, void 0, function* () {
-                const command = 'pacman -Syuu --noconfirm --disable-download-timeout';
-                const indicator = 'there is nothing to do';
-                let output = '';
-                const outStream = new stream.Writable({
-                    write(chunk, encoding, next) {
-                        output += chunk.toString();
-                        process.stdout.write(chunk);
-                        next();
-                    }
-                });
-                let occurrences = 0;
-                const maxTries = core.getInput('update').toLowerCase() === 'true' ? 5 : 0;
-                for (let tries = 0; tries < maxTries && occurrences < 2; tries++) {
-                    output = '';
-                    core.debug(`MSYS2 update iteration ${tries + 1}...`);
-                    yield exec.exec(launcher, ['-defterm', '-no-start', '-c', command], {
-                        outStream,
-                        ignoreReturnCode: true
+            if (core.getInput('update').toLowerCase() === 'true') {
+                yield core.group('Updating MSYS2', () => __awaiter(this, void 0, void 0, function* () {
+                    const command = 'pacman -Syuu --noconfirm --disable-download-timeout';
+                    const indicator = 'there is nothing to do';
+                    let output = '';
+                    const outStream = new stream.Writable({
+                        write(chunk, encoding, next) {
+                            output += chunk.toString();
+                            process.stdout.write(chunk);
+                            next();
+                        }
                     });
-                    if (output.includes(indicator)) {
-                        occurrences++;
+                    let occurrences = 0;
+                    const maxTries = 5;
+                    for (let tries = 0; tries < maxTries && occurrences < 2; tries++) {
+                        output = '';
+                        core.debug(`MSYS2 update iteration ${tries + 1}...`);
+                        yield exec.exec(launcher, ['-defterm', '-no-start', '-c', command], {
+                            outStream,
+                            ignoreReturnCode: true
+                        });
+                        if (output.includes(indicator)) {
+                            occurrences++;
+                        }
                     }
-                }
-            }));
+                }));
+            }
             const shellName = core.getInput('shell-name') || 'msys2';
             yield core.group(`Making shell '${shellName} available'`, () => __awaiter(this, void 0, void 0, function* () {
                 var _a;
                 const shouldCleanPath = core.getInput('clean-path').toLowerCase() === 'true';
+                const shouldUseMSVC = core.getInput('use-msvc').toLowerCase() === 'true';
                 const cleanedPath = (_a = process.env['PATH']) === null || _a === void 0 ? void 0 : _a.split(';').filter(p => p.toLowerCase().startsWith('c:\\windows')).join(';');
                 const vsDevCmd = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\Tools\\VsDevCmd.bat';
-                yield fs_1.promises.writeFile(path.join(root, `${shellName}.bat`), [
+                const shell = [
                     '@echo off',
                     'setlocal',
                     'IF NOT DEFINED MSYS2_PATH_TYPE set MSYS2_PATH_TYPE=inherit',
-                    shouldCleanPath ? `set PATH=${JSON.stringify(cleanedPath)}` : '',
-                    `call ${JSON.stringify(vsDevCmd)} -no_logo -arch=amd64`,
+                    `IF NOT DEFINED CLEAN_PATH set CLEAN_PATH=${shouldCleanPath}`,
+                    `IF NOT DEFINED USE_MSVC set USE_MSVC=${shouldUseMSVC}`,
+                    `IF "%CLEAN_PATH%" == "1" set PATH=${JSON.stringify(cleanedPath)}`,
+                    `IF "%CLEAN_PATH%" == "true" set PATH=${JSON.stringify(cleanedPath)}`,
+                    `IF "%USE_MSVC%" == "1" call ${JSON.stringify(vsDevCmd)} -no_logo -arch=amd64`,
+                    `IF "%USE_MSVC%" == "true" call ${JSON.stringify(vsDevCmd)} -no_logo -arch=amd64`,
                     `call ${JSON.stringify(launcher)} -defterm -no-start %*`,
                     'endlocal'
-                ].join('\r\n'));
+                ];
+                const shellBat = path.join(root, `${shellName}.bat`);
+                console.log(`Creating shell launcher script ${shellBat}`);
+                console.log(shell.join('\n'));
+                yield fs_1.promises.writeFile(shellBat, shell.join('\r\n'));
                 core.addPath(root);
             }));
         }
