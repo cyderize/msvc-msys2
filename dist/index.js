@@ -1463,7 +1463,7 @@ function run() {
                 }));
             }
             const shellName = core.getInput('shell-name') || 'msys2';
-            yield core.group(`Making shell '${shellName} available'`, () => __awaiter(this, void 0, void 0, function* () {
+            yield core.group(`Making shell '${shellName}' available`, () => __awaiter(this, void 0, void 0, function* () {
                 var _a;
                 const shouldCleanPath = core.getInput('clean-path').toLowerCase() === 'true';
                 const shouldUseMSVC = core.getInput('use-msvc').toLowerCase() === 'true';
@@ -1485,7 +1485,7 @@ function run() {
                 ];
                 const shellBat = path.join(root, `${shellName}.bat`);
                 console.log(`Creating shell launcher script ${shellBat}`);
-                console.log(shell.join('\n'));
+                console.log(shell.map(x => '  ' + x).join('\n'));
                 yield fs_1.promises.writeFile(shellBat, shell.join('\r\n'));
                 core.addPath(root);
             }));

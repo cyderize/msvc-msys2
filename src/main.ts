@@ -80,7 +80,7 @@ async function run(): Promise<void> {
     }
 
     const shellName = core.getInput('shell-name') || 'msys2'
-    await core.group(`Making shell '${shellName} available'`, async () => {
+    await core.group(`Making shell '${shellName}' available`, async () => {
       const shouldCleanPath = core.getInput('clean-path').toLowerCase() === 'true'
       const shouldUseMSVC = core.getInput('use-msvc').toLowerCase() === 'true'
       const cleanedPath = process.env['PATH']
@@ -105,7 +105,7 @@ async function run(): Promise<void> {
       ]
       const shellBat = path.join(root, `${shellName}.bat`)
       console.log(`Creating shell launcher script ${shellBat}`)
-      console.log(shell.join('\n'))
+      console.log(shell.map(x => '  ' + x).join('\n'))
       await fs.writeFile(shellBat, shell.join('\r\n'))
       core.addPath(root)
     })

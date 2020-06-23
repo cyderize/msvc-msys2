@@ -21,34 +21,40 @@ jobs:
     strategy:
       matrix:
         version: [latest, included]
-        update: [true, false]
-        clean-path: [true, false]
-        use-msvc: [true, false]
+        update: [update, no-update]
+        clean-path: [clean-path, dirty-path]
+        use-msvc: [msvc, no-msvc]
     steps:
       - uses: actions/checkout@v2
       - name: Setup MSVC-MSYS2
         uses: ./
         with:
-          clean-path: ${{ matrix.clean-path }}
-          shell-name: msys2
-          update: ${{ matrix.update }}
           version: ${{ matrix.version }}
+          update: ${{ matrix.update == 'update' }}
+          clean-path: ${{ matrix.clean-path == 'clean-path' }}
+          use-msvc: ${{ matrix.use-msvc == 'msvc' }}
+          shell-name: msys2
+      - name: Add dummy value to path
+        run: |
+          echo "::add-path::DUMMY_VALUE"
+        shell: bash
       - name: Run script using MSYS2
         run: |
           echo "Hello from MSYS2!"
-          echo "----------"
-          pacman -Q
-          echo "----------"
-          printenv
+          ./test.sh
         shell: msys2 {0}
+        working-directory: .github/workflows
+        env:
+          EXPECT_CLEAN_PATH: ${{ matrix.clean-path == 'clean-path' }}
+          EXPECT_MSVC: ${{ matrix.use-msvc == 'msvc' }}
       - name: Run script using MSYS2 and environment overrides
         run: |
           echo "Hello from MSYS2!"
-          echo "----------"
-          pacman -Q
-          echo "----------"
-          printenv
+          ./test.sh
         shell: msys2 {0}
+        working-directory: .github/workflows
         env:
-          CLEAN_PATH: ${{ !matrix.clean-path }}
-          USE_MSVC: ${{ !matrix.use_msvc }}
+          CLEAN_PATH: ${{ matrix.clean-path == 'dirty-path' }}
+          USE_MSVC: ${{ matrix.use-msvc == 'no-msvc' }}
+          EXPECT_CLEAN_PATH: ${{ matrix.clean-path == 'dirty-path' }}
+          EXPECT_MSVC: ${{ matrix.use-msvc == 'no-msvc' }}
