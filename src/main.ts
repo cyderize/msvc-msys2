@@ -99,7 +99,8 @@ async function run(): Promise<void> {
         `IF "%CLEAN_PATH%" == "true" set PATH=${JSON.stringify(cleanedPath)}`,
         `IF "%USE_MSVC%" == "1" call ${JSON.stringify(vsDevCmd)} -no_logo -arch=amd64`,
         `IF "%USE_MSVC%" == "true" call ${JSON.stringify(vsDevCmd)} -no_logo -arch=amd64`,
-        `call ${JSON.stringify(launcher)} -defterm -no-start %*`,
+        `call ${JSON.stringify(launcher)} -defterm -no-start -here %*`,
+        'IF %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%',
         'endlocal'
       ]
       const shellBat = path.join(root, `${shellName}.bat`)
