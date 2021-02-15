@@ -36,7 +36,7 @@ jobs:
           shell-name: msys2
       - name: Add dummy value to path
         run: |
-          echo "::add-path::DUMMY_VALUE"
+          echo "DUMMY_VALUE" >> $GITHUB_PATH
         shell: bash
       - name: Run script using MSYS2
         run: |
